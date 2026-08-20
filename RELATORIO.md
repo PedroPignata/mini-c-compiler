@@ -1190,18 +1190,20 @@ testes/
 
 Foram executados testes válidos, inválidos e específicos para a análise da precedência e da melhoria implementada.
 
-| ID | Teste | Resultado esperado | Resultado obtido | Situação |
+| ID | Entrada/Teste | Resultado esperado | Resultado obtido | Situação |
 |---|---|---|---|---|
-| T01 | Programa léxico válido | Execução normal | Execução normal | Aprovado |
-| T02 | Caractere `@` | Erro léxico | `Unknown character: @` | Aprovado |
-| T03 | Programa sintaticamente válido | Resultado `30` | `30` | Aprovado |
-| T04 | Ausência de `=` | Erro sintático | `expected '=' at pos=2` | Aprovado |
-| T05 | Ausência de `;` | Erro sintático | `expected ';' at pos=6` | Aprovado |
-| T06 | Parêntese incompleto | Erro sintático | `expected ')' at pos=7` | Aprovado |
-| T07 | `2 * 3 + 4` | `10` | `14` na versão original | Reprovado na versão original |
-| T08 | `10 - 3 - 2` | `5` | `9` na versão original | Reprovado na versão original |
-| T09 | `2 + 3 * 4` | `14` | `14` | Aprovado |
-| T10 | Melhoria de precedência | `34` | `34` | Aprovado |
+| T01 | Programa original do repositório | `10` | `10` | Aprovado |
+| T02 | Caractere desconhecido `@` | Erro léxico | `Unknown character: @` | Aprovado |
+| T03 | Ausência de `=` | Erro sintático | `expected '=' at pos=2` | Aprovado |
+| T04 | Ausência de `;` | Erro sintático | `expected ';' at pos=6` | Aprovado |
+| T05 | Parêntese incompleto | Erro sintático | `expected ')' at pos=7` | Aprovado |
+| T06 | Variável não definida | Erro de execução | `undefined variable 'x'` | Aprovado |
+| T07 | Divisão por zero | Erro de execução | `division by zero` | Aprovado |
+| T08 | Precedência: `2 * 3 + 4` | `10` | `10` após a correção | Aprovado |
+| T09 | Associatividade: `10 - 3 - 2` | `5` | `5` após a correção | Aprovado |
+| T10 | Melhoria individual de precedência | `34` | `34` | Aprovado |
+
+As saídas completas dos testes T01 a T10 foram armazenadas no diretório `evidencias/`, permitindo consultar os resultados obtidos durante a execução.
 
 Também foram realizados testes exploratórios envolvendo:
 

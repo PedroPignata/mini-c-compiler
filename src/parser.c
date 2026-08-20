@@ -23,6 +23,9 @@ ASTNode* create_node(ASTNodeType type, int value, const char* name, ASTNode* lef
 
 /* Forward declaration of parse_expression for recursive calls */
 ASTNode* parse_expression(TokenList* tokens, int* pos);
+ASTNode* parse_additive(TokenList* tokens, int* pos);
+ASTNode* parse_multiplicative(TokenList* tokens, int* pos);
+ASTNode* parse_primary(TokenList* tokens, int* pos);
 
 /* 
  * Parses a statement (variable assignment, print, etc.)
@@ -110,63 +113,95 @@ ASTNode* parse_statement(TokenList* tokens, int* pos) {
     }
 }
 
-/* 
- * Parses simple binary expressions (numbers, variables, +, -, *, /)
+/*
+ * Parses primary expressions:
+ * numbers, variables and parenthesized expressions.
  */
-ASTNode* parse_expression(TokenList* tokens, int* pos) {
+ASTNode* parse_primary(TokenList* tokens, int* pos) {
     Token current = tokens->tokens[*pos];
-    ASTNode* left = NULL;
 
-    if (current.type == T_NUMBER) { // if token is a number (e.g. '5' in "5 + 3")
-        // left is a pointer to an AST node of type = AST_NUMBER; value contains the numeeric value read from the token (e.g. '5')
-        left = create_node(AST_NUMBER, current.value, NULL, NULL, NULL);
+    if (current.type == T_NUMBER) {
         (*pos)++;
-    } else if (current.type == T_IDENTIFIER) { // if token is a variable (e.g. 'x' in "x * 2") (it means that the expression contains a variable instead of a number)
-        left = create_node(AST_VAR, 0, current.name, NULL, NULL);
+        return create_node(AST_NUMBER, current.value, NULL, NULL, NULL);
+    }
+
+    if (current.type == T_IDENTIFIER) {
         (*pos)++;
-    } else if (current.type == T_LPAREN) {  // if token is '('
-        (*pos)++; // skip the '(' token and move to the next one
+        return create_node(AST_VAR, 0, current.name, NULL, NULL);
+    }
 
-        // Recursively parse the expression inside the parentheses.
-        // This handles any valid sub-expression, including numbers, variables,
-        // binary operations, or even nested parentheses.
-        // The result is stored in 'left' as a subtree of the AST.
-        left = parse_expression(tokens, pos);
+    if (current.type == T_LPAREN) {
+        (*pos)++;
 
-        // After parsing the sub-expression, we expect a closing parenthesis ')'
-        // If the next token is not ')', it's a syntax error
+        ASTNode* expr = parse_expression(tokens, pos);
+
         if (tokens->tokens[*pos].type != T_RPAREN) {
             printf("Syntax error: expected ')' at pos=%d\n", *pos);
             exit(1);
         }
 
-        (*pos)++;  // Skip the ')' token and continue parsing
-    } else {
-        printf("Syntax error: unexpected token at pos=%d\n", *pos);
-        exit(1);
-    }
-
-    current = tokens->tokens[*pos];
-    while (current.type == T_PLUS || current.type == T_MINUS ||
-        current.type == T_MULT || current.type == T_DIV) {
-
-        char op = 0;
-        switch (current.type) {
-            case T_PLUS: op = '+'; break;
-            case T_MINUS: op = '-'; break;
-            case T_MULT: op = '*'; break;
-            case T_DIV: op = '/'; break;
-        }
         (*pos)++;
-        ASTNode* right = parse_expression(tokens, pos);
-        left = create_node(AST_BINARY_OP, op, NULL, left, right);
-        current = tokens->tokens[*pos];
+        return expr;
     }
 
-    /* If no binary operator follows the current token, simply return the left node
-     * Example: a standalone number "5" will return AST_NUMBER(5) without further recursion
-     */
+    printf("Syntax error: unexpected token at pos=%d\n", *pos);
+    exit(1);
+}
+
+
+/*
+ * Parses multiplication and division.
+ * These operators have higher precedence than + and -.
+ */
+ASTNode* parse_multiplicative(TokenList* tokens, int* pos) {
+    ASTNode* left = parse_primary(tokens, pos);
+
+    while (tokens->tokens[*pos].type == T_MULT ||
+           tokens->tokens[*pos].type == T_DIV) {
+
+        TokenType op_type = tokens->tokens[*pos].type;
+        (*pos)++;
+
+        ASTNode* right = parse_primary(tokens, pos);
+
+        char op = (op_type == T_MULT) ? '*' : '/';
+
+        left = create_node(AST_BINARY_OP, op, NULL, left, right);
+    }
+
     return left;
+}
+
+
+/*
+ * Parses addition and subtraction.
+ * Multiplication and division are processed first.
+ */
+ASTNode* parse_additive(TokenList* tokens, int* pos) {
+    ASTNode* left = parse_multiplicative(tokens, pos);
+
+    while (tokens->tokens[*pos].type == T_PLUS ||
+           tokens->tokens[*pos].type == T_MINUS) {
+
+        TokenType op_type = tokens->tokens[*pos].type;
+        (*pos)++;
+
+        ASTNode* right = parse_multiplicative(tokens, pos);
+
+        char op = (op_type == T_PLUS) ? '+' : '-';
+
+        left = create_node(AST_BINARY_OP, op, NULL, left, right);
+    }
+
+    return left;
+}
+
+
+/*
+ * Entry point for expression parsing.
+ */
+ASTNode* parse_expression(TokenList* tokens, int* pos) {
+    return parse_additive(tokens, pos);
 }
 
 /* 
